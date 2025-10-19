@@ -149,11 +149,10 @@ The callback processes **N pixels at once**, where N is the SIMD width defined b
 Example:
 
 ```cpp
-[](int tx, int ty, int column, int row, Warp1::IntMask mask, Warp1::Float* attrs){
+[](int tx, int ty, int column, int row, Warp::IntMask mask, Warp::Float* attrs){
     // Perform shading and write color/depth manually
-    if(mask) {
-        framebuffer[tx*tile_size + column + (ty*tile_size + row)*screen_width] = computeColor(attrs);
-    }
+    int write_index = tx*tile_size + column + (ty*tile_size + row)*screen_width;
+    framebuffer[write_index] = xsimd::select(mask, computeColor(attrs), framebuffer[write_index]);
 }
 ```
 ### Multithreading
