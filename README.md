@@ -14,6 +14,9 @@ Requires **C++20**.
 ## Basic example (No SIMD, Single thread)
 
 ```cpp
+#include <bgl/bgl.hpp>
+#include <bgl/warp1.hpp>
+
 struct Color {
     unsigned char red;
     unsigned char green;
