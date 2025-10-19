@@ -46,10 +46,10 @@ namespace bgl {
  * @tparam CONFIG
  *     Compile-time configuration object describing rasterization behavior.
  *     It typically specifies:
- *       - `Warp` — SIMD warp type used for vectorized processing,
- *       - `clip_space_style` — clip-space convention (e.g., OpenGL, D3D),
- *       - `tile_size` — tile dimension in pixels,
- *       - `use_reciprocal_for_perspective_correction` — if true, uses a reciprocal (1/w)
+ *       - `Warp` ï¿½ SIMD warp type used for vectorized processing,
+ *       - `clip_space_style` ï¿½ clip-space convention (e.g., OpenGL, D3D),
+ *       - `tile_size` ï¿½ tile dimension in pixels,
+ *       - `use_reciprocal_for_perspective_correction` ï¿½ if true, uses a reciprocal (1/w)
  *         instruction instead of division when performing perspective-correct interpolation,
  * trading a small amount of accuracy for better performance on SIMD hardware.
  *
@@ -88,10 +88,10 @@ namespace bgl {
  *                   typename CONFIG::Warp::IntMask mask,
  *                   typename CONFIG::Warp::Float* attrs);
  *     @endcode
- *     - `tx`, `ty` — tile coordinates (in tile units);
- *     - `column`, `row` — local pixel position within the tile;
- *     - `mask` — SIMD mask indicating active pixels;
- *     - `attrs` — interpolated vertex attributes for active pixels.
+ *     - `tx`, `ty` ï¿½ tile coordinates (in tile units);
+ *     - `column`, `row` ï¿½ local pixel position within the tile;
+ *     - `mask` ï¿½ SIMD mask indicating active pixels;
+ *     - `attrs` ï¿½ interpolated vertex attributes for active pixels.
  *
  *     The user is responsible for writing shaded results into the framebuffer
  *     (e.g., color or depth buffers) within this callback.
@@ -111,7 +111,7 @@ namespace bgl {
  * - Performs viewport transformation to convert to screen space.
  * - Supports both perspective-correct and affine interpolation depending on `CONFIG`.
  * - The rasterizer uses the top-left fill rule for consistent edge inclusion.
- * - Does not perform any implicit framebuffer writes — user logic in `fragment` controls output.
+ * - Does not perform any implicit framebuffer writes ï¿½ user logic in `fragment` controls output.
  * - If `CONFIG::perspective_correction` is enabled, the fragment shader receives an
  *       additional implicit attribute at the end of the `attrs` array: `1/w` of the fragment
  *
@@ -254,9 +254,9 @@ namespace bgl {
                 };
 
                 topleft_triangle_scanline<Warp, CONFIG.tile_size>(
-                    a.x, a.y,
-                    b.x, b.y,
-                    c.x, c.y,
+                    static_cast<int>(a.x), static_cast<int>(a.y),
+                    static_cast<int>(b.x), static_cast<int>(b.y),
+                    static_cast<int>(c.x), static_cast<int>(c.y),
                     new_a_attrs,
                     new_b_attrs,
                     new_c_attrs,
@@ -276,9 +276,9 @@ namespace bgl {
                 }
                 
                 topleft_triangle_scanline<Warp, CONFIG.tile_size>(
-                    a.x, a.y,
-                    b.x, b.y,
-                    c.x, c.y,
+                    static_cast<int>(a.x), static_cast<int>(a.y),
+                    static_cast<int>(b.x), static_cast<int>(b.y),
+                    static_cast<int>(c.x), static_cast<int>(c.y),
                     new_a_attrs,
                     new_b_attrs,
                     new_c_attrs,

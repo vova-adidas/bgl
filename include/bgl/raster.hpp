@@ -32,23 +32,23 @@ namespace bgl {
 
         inline constexpr static float EPSILON = 0.001f;
 
-        inline static auto swap(auto& a, auto& b) {
+        inline constexpr static auto swap(auto& a, auto& b) {
             auto temp = a;
             a = b;
             b = temp;
         };
 
-        inline static auto ceil(float x) {
+        inline constexpr static auto ceil(float x) {
             int i = static_cast<int>(x);
             return x > i ? i + 1 : i;
         };
 
-        inline static auto floor(float x) {
+        inline constexpr static auto floor(float x) {
             int i = static_cast<int>(x);
             return i;
         };
 
-        inline static auto float_eq(auto x, auto y) {
+        inline constexpr static auto float_eq(auto x, auto y) {
             auto d = x - y;
             if (d < 0)
                 d = -d;
@@ -321,10 +321,10 @@ namespace bgl {
  *     @endcode
  *
  *     Parameters:
- *     - `tx`, `ty` — tile coordinates (in tiles, not pixels);
- *     - `column`, `row` — local pixel position inside the tile;
- *     - `mask` — bitmask of active pixels (edge function > 0);
- *     - `attrs` — interpolated vertex attributes for active pixels.
+ *     - `tx`, `ty` ï¿½ tile coordinates (in tiles, not pixels);
+ *     - `column`, `row` ï¿½ local pixel position inside the tile;
+ *     - `mask` ï¿½ bitmask of active pixels (edge function > 0);
+ *     - `attrs` ï¿½ interpolated vertex attributes for active pixels.
  *
  * @param tile_lock
  *     Function called before processing each tile.
@@ -389,8 +389,8 @@ namespace bgl {
             return (dy > 0) || (dy == 0 && dx < 0);
         };
 
-        float area = edge(ax, ay, bx, by, cx, cy);
-        float inv_area = 1 / area;
+        int area = edge(ax, ay, bx, by, cx, cy);
+        float inv_area = 1.f / area;
 
         if (area <= 0)
             return;
@@ -428,7 +428,7 @@ namespace bgl {
 
         for (int i = 0; i < TWarp::SIZE; ++i) {
             temp_idx[i] = i;
-            temp_fidx[i] = i;
+            temp_fidx[i] = static_cast<float>(i);
         }
 
         auto idx = TWarp::load(temp_idx);
@@ -631,10 +631,10 @@ namespace bgl {
  *     @endcode
  *
  *     Parameters:
- *     - `tx`, `ty` — tile coordinates (in tiles, not pixels);
- *     - `column`, `row` — local pixel position inside the tile;
- *     - `mask` — bitmask of active pixels (edge function > 0);
- *     - `attrs` — interpolated vertex attributes for active pixels.
+ *     - `tx`, `ty` ï¿½ tile coordinates (in tiles, not pixels);
+ *     - `column`, `row` ï¿½ local pixel position inside the tile;
+ *     - `mask` ï¿½ bitmask of active pixels (edge function > 0);
+ *     - `attrs` ï¿½ interpolated vertex attributes for active pixels.
  *
  * @param tile_lock
  *     Function called before processing each tile.
@@ -812,23 +812,24 @@ namespace bgl {
             int tile_end_x_culled = tile_end_x;
 
             if constexpr (EMPTY_TILE_CULLING) {
+                const auto max3 = [&](int a, int b, int c) { return a > b ? (a > c ? a : c) : (b > c ? b : c); };
                 const auto e0 = [&](int x, int y) { return scalar_start_edge[0] + scalar_dx_edge[0] * x + scalar_dy_edge[0] * y; };
                 const auto e1 = [&](int x, int y) { return scalar_start_edge[1] + scalar_dx_edge[1] * x + scalar_dy_edge[1] * y; };
                 const auto e2 = [&](int x, int y) { return scalar_start_edge[2] + scalar_dx_edge[2] * x + scalar_dy_edge[2] * y; };
 
                 const auto is_tile_outside = [&](int tx, int ty) {
                     return
-                        std::max({ e0(tx * TILE_SIZE, ty * TILE_SIZE),
+                        max3({ e0(tx * TILE_SIZE, ty * TILE_SIZE),
                         e0(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE),
                         e0(tx * TILE_SIZE, ty * TILE_SIZE + TILE_SIZE - 1),
                         e0(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1) }) < 0
                         ||
-                        std::max({ e1(tx * TILE_SIZE, ty * TILE_SIZE),
+                        max3({ e1(tx * TILE_SIZE, ty * TILE_SIZE),
                         e1(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE),
                         e1(tx * TILE_SIZE, ty * TILE_SIZE + TILE_SIZE - 1),
                         e1(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1) }) < 0
                         ||
-                        std::max({ e2(tx * TILE_SIZE, ty * TILE_SIZE),
+                        max3({ e2(tx * TILE_SIZE, ty * TILE_SIZE),
                         e2(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE),
                         e2(tx * TILE_SIZE, ty * TILE_SIZE + TILE_SIZE - 1),
                         e2(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1) }) < 0;

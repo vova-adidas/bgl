@@ -6,9 +6,9 @@ namespace bgl {
 	public:
 		inline constexpr Viewport(int width, int height) : m_width(width), m_height(height) {}
 
-		inline constexpr float width() const { return m_width; }
+		inline constexpr int width() const { return m_width; }
 
-		inline constexpr float height() const { return m_height; }
+		inline constexpr int height() const { return m_height; }
 
 		template<bool CLAMPED>
 		inline constexpr void clip_space_to_screen_inv_w(float& x, float& y, float& w) const {
