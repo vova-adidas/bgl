@@ -20,19 +20,19 @@ struct Warp1 {
 	constexpr static inline int SIZE = 1;
 	constexpr static inline int ALIGNMENT = 4;
 
-	inline static Float scalar(float v) { return v; }
-	inline static Float load(float* src) { return *src; }
-	inline static Float fma(Float a, Float b, Float c) { return a * b + c; }
-	inline static Float mul(Float a, Float b) { return a * b; }
-	inline static Float div(Float a, Float b) { return a / b; }
-	inline static Float reciprocal(Float a) { return 1.f / a; }
-	inline static Float add(Float a, Float b) { return a + b; }
+	inline constexpr static Float scalar(float v) { return v; }
+	inline constexpr static Float load(float* src) { return *src; }
+	inline constexpr static Float fma(Float a, Float b, Float c) { return a * b + c; }
+	inline constexpr static Float mul(Float a, Float b) { return a * b; }
+	inline constexpr static Float div(Float a, Float b) { return a / b; }
+	inline constexpr static Float reciprocal(Float a) { return 1.f / a; }
+	inline constexpr static Float add(Float a, Float b) { return a + b; }
 
-	inline static Int scalar(int v) { return v; }
-	inline static Int load(int* v) { return *v; }
-	inline static Int mul(Int a, Int b) { return a * b; }
-	inline static Int add(Int a, Int b) { return a + b; }
+	inline constexpr static Int scalar(int v) { return v; }
+	inline constexpr static Int load(int* v) { return *v; }
+	inline constexpr static Int mul(Int a, Int b) { return a * b; }
+	inline constexpr static Int add(Int a, Int b) { return a + b; }
 
-	inline static IntMask and_(IntMask a, IntMask b) { return (a == 1) && (b == 1); }
-	inline static IntMask greater(Int a, Int b) { return a > b ? 1 : 0; }
+	inline constexpr static IntMask and_(IntMask a, IntMask b) { return (a == 1) && (b == 1); }
+	inline constexpr static IntMask greater(Int a, Int b) { return a > b ? 1 : 0; }
 };
