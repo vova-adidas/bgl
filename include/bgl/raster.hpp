@@ -395,12 +395,12 @@ namespace bgl {
         if (area <= 0)
             return;
 
-        int iax = static_cast<int>(SUBPIXEL_RES) * ax;
-        int ibx = static_cast<int>(SUBPIXEL_RES) * bx;
-        int icx = static_cast<int>(SUBPIXEL_RES) * cx;
-        int iay = static_cast<int>(SUBPIXEL_RES) * ay;
-        int iby = static_cast<int>(SUBPIXEL_RES) * by;
-        int icy = static_cast<int>(SUBPIXEL_RES) * cy;
+        int iax = SUBPIXEL_RES * ax;
+        int ibx = SUBPIXEL_RES * bx;
+        int icx = SUBPIXEL_RES * cx;
+        int iay = SUBPIXEL_RES * ay;
+        int iby = SUBPIXEL_RES * by;
+        int icy = SUBPIXEL_RES * cy;
 
         int max_ix = iax > ibx ? (iax > icx ? iax : icx) : (ibx > icx ? ibx : icx);
         int max_iy = iay > iby ? (iay > icy ? iay : icy) : (iby > icy ? iby : icy);
@@ -451,16 +451,16 @@ namespace bgl {
         alignas(TWarp::ALIGNMENT) typename TWarp::Float a_dy[NUM_ATTRS];
         alignas(TWarp::ALIGNMENT) typename TWarp::Float a_dx_wide[NUM_ATTRS];
 
-        auto w0_dx = TWarp::scalar(scalar_dx_edge[0] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w1_dx = TWarp::scalar(scalar_dx_edge[1] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w2_dx = TWarp::scalar(scalar_dx_edge[2] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w0_dy = TWarp::scalar(scalar_dy_edge[0] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w1_dy = TWarp::scalar(scalar_dy_edge[1] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w2_dy = TWarp::scalar(scalar_dy_edge[2] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
+        auto w0_dx = TWarp::scalar(scalar_dx_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w1_dx = TWarp::scalar(scalar_dx_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w2_dx = TWarp::scalar(scalar_dx_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w0_dy = TWarp::scalar(scalar_dy_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w1_dy = TWarp::scalar(scalar_dy_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w2_dy = TWarp::scalar(scalar_dy_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
 
-        auto w0_start = TWarp::fma(fidx, w0_dx, TWarp::scalar(inv_area * scalar_start_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES)));
-        auto w1_start = TWarp::fma(fidx, w1_dx, TWarp::scalar(inv_area * scalar_start_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES)));
-        auto w2_start = TWarp::fma(fidx, w2_dx, TWarp::scalar(inv_area * scalar_start_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES)));
+        auto w0_start = TWarp::fma(fidx, w0_dx, TWarp::scalar(scalar_start_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area));
+        auto w1_start = TWarp::fma(fidx, w1_dx, TWarp::scalar(scalar_start_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area));
+        auto w2_start = TWarp::fma(fidx, w2_dx, TWarp::scalar(scalar_start_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area));
 
         for (int i = 0; i < NUM_ATTRS; ++i) {
             auto attr_a = TWarp::scalar(a_attributes[i]);
@@ -523,16 +523,17 @@ namespace bgl {
          
                 int tx_begin = line_batch_left[line];
                 int tx_end = line_batch_right[line];
-                int sx = tx_begin * TILE_SIZE;
-                int sy = ty * TILE_SIZE;
-
-                for (int i = 0; i < NUM_ATTRS; ++i)
-                    attrs[i] = TWarp::fma(TWarp::scalar(sy * 1.f), a_dy[i], TWarp::fma(TWarp::scalar(sx * 1.f), a_dx[i], a_start[i]));
-
-                for (int i = 0; i < 3; ++i)
-                    edges[i] = TWarp::add(TWarp::mul(TWarp::scalar(sy), dy_edge[i]), TWarp::add(TWarp::mul(TWarp::scalar(sx), dx_edge[i]), start_edge[i]));
-
+              
                 for (int tx = tx_begin; tx < tx_end; ++tx) {
+                    int sx = tx * TILE_SIZE;
+                    int sy = ty * TILE_SIZE;
+                    
+                    for (int i = 0; i < NUM_ATTRS; ++i)
+                        attrs[i] = TWarp::fma(TWarp::scalar(sy * 1.f), a_dy[i], TWarp::fma(TWarp::scalar(sx * 1.f), a_dx[i], a_start[i]));
+
+                    for (int i = 0; i < 3; ++i)
+                        edges[i] = TWarp::add(TWarp::mul(TWarp::scalar(sy), dy_edge[i]), TWarp::add(TWarp::mul(TWarp::scalar(sx), dx_edge[i]), start_edge[i]));
+
                     tile_lock(tx, ty);
 
                     for (int row = 0; row < TILE_SIZE; ++row) {
@@ -559,12 +560,6 @@ namespace bgl {
                         for (int i = 0; i < 3; ++i)
                             edges[i] = TWarp::add(edges[i], TWarp::add(dy_edge[i], TWarp::mul(dx_wide_edge[i], TWarp::scalar(-column_step))));
                     }
-
-                    for (int i = 0; i < NUM_ATTRS; ++i)
-                        attrs[i] = TWarp::add(attrs[i], TWarp::mul(TWarp::fma(TWarp::scalar(-1.f), a_dy[i], a_dx[i]), TWarp::scalar(1.f * TILE_SIZE)));
-                        
-                    for (int i = 0; i < 3; ++i)
-                        edges[i] = TWarp::add(edges[i], TWarp::mul(TWarp::add(dx_edge[i], TWarp::mul(dy_edge[i], TWarp::scalar(-1))), TWarp::scalar(TILE_SIZE)));
 
                     tile_unlock(tx, ty);
                 }            
@@ -668,7 +663,7 @@ namespace bgl {
  * );
  * @endcode
  */
-    template<typename TWarp, int TILE_SIZE, int NUM_ATTRS, bool EMPTY_TILE_CULLING>
+    template<typename TWarp, int TILE_SIZE, bool EMPTY_TILE_CULLING, int NUM_ATTRS>
     inline constexpr void topleft_triangle_bounding_box(
         int ax,
         int ay,
@@ -683,7 +678,7 @@ namespace bgl {
         auto tile_lock,
         auto tile_unlock) {
 
-        static_assert(TILE_SIZE >= 0, "Error: TILE_SIZE == 0");
+       static_assert(TILE_SIZE >= 0, "Error: TILE_SIZE == 0");
 
         static_assert(TILE_SIZE >= TWarp::SIZE, "Error: TILE_SIZE < BATCH_SIZE");
 
@@ -693,24 +688,24 @@ namespace bgl {
 
         auto edge = [](auto ax, auto ay, auto bx, auto by, auto x, auto y) {
             return (by - ay) * x + (ax - bx) * y + (bx * ay - ax * by);
-            };
+        };
 
         auto is_top_left = [](int dx, int dy) {
             return (dy > 0) || (dy == 0 && dx < 0);
-            };
+        };
 
-        float area = edge(ax, ay, bx, by, cx, cy);
-        float inv_area = 1 / area;
+        int area = edge(ax, ay, bx, by, cx, cy);
+        float inv_area = 1.f / area;
 
         if (area <= 0)
             return;
 
-        int iax = static_cast<int>(SUBPIXEL_RES) * ax;
-        int ibx = static_cast<int>(SUBPIXEL_RES) * bx;
-        int icx = static_cast<int>(SUBPIXEL_RES) * cx;
-        int iay = static_cast<int>(SUBPIXEL_RES) * ay;
-        int iby = static_cast<int>(SUBPIXEL_RES) * by;
-        int icy = static_cast<int>(SUBPIXEL_RES) * cy;
+        int iax = SUBPIXEL_RES * ax;
+        int ibx = SUBPIXEL_RES * bx;
+        int icx = SUBPIXEL_RES * cx;
+        int iay = SUBPIXEL_RES * ay;
+        int iby = SUBPIXEL_RES * by;
+        int icy = SUBPIXEL_RES * cy;
 
         int scalar_start_edge[3]{
             edge(ibx, iby, icx, icy, SUBPIXEL_RES / 2, SUBPIXEL_RES / 2) + (is_top_left(icx - ibx, icy - iby) ? 0 : SUBPIXEL_RES),
@@ -735,7 +730,7 @@ namespace bgl {
 
         for (int i = 0; i < TWarp::SIZE; ++i) {
             temp_idx[i] = i;
-            temp_fidx[i] = i;
+            temp_fidx[i] = static_cast<float>(i);
         }
 
         auto idx = TWarp::load(temp_idx);
@@ -758,16 +753,16 @@ namespace bgl {
         alignas(TWarp::ALIGNMENT) typename TWarp::Float a_dy[NUM_ATTRS];
         alignas(TWarp::ALIGNMENT) typename TWarp::Float a_dx_wide[NUM_ATTRS];
 
-        auto w0_dx = TWarp::scalar(scalar_dx_edge[0] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w1_dx = TWarp::scalar(scalar_dx_edge[1] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w2_dx = TWarp::scalar(scalar_dx_edge[2] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w0_dy = TWarp::scalar(scalar_dy_edge[0] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w1_dy = TWarp::scalar(scalar_dy_edge[1] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
-        auto w2_dy = TWarp::scalar(scalar_dy_edge[2] * inv_area / (SUBPIXEL_RES * SUBPIXEL_RES));
+        auto w0_dx = TWarp::scalar(scalar_dx_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w1_dx = TWarp::scalar(scalar_dx_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w2_dx = TWarp::scalar(scalar_dx_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w0_dy = TWarp::scalar(scalar_dy_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w1_dy = TWarp::scalar(scalar_dy_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
+        auto w2_dy = TWarp::scalar(scalar_dy_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area);
 
-        auto w0_start = TWarp::fma(fidx, w0_dx, TWarp::scalar(inv_area * scalar_start_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES)));
-        auto w1_start = TWarp::fma(fidx, w1_dx, TWarp::scalar(inv_area * scalar_start_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES)));
-        auto w2_start = TWarp::fma(fidx, w2_dx, TWarp::scalar(inv_area * scalar_start_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES)));
+        auto w0_start = TWarp::fma(fidx, w0_dx, TWarp::scalar(scalar_start_edge[0] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area));
+        auto w1_start = TWarp::fma(fidx, w1_dx, TWarp::scalar(scalar_start_edge[1] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area));
+        auto w2_start = TWarp::fma(fidx, w2_dx, TWarp::scalar(scalar_start_edge[2] / (SUBPIXEL_RES * SUBPIXEL_RES) * inv_area));
 
         for (int i = 0; i < NUM_ATTRS; ++i) {
             auto attr_a = TWarp::scalar(a_attributes[i]);
@@ -812,27 +807,38 @@ namespace bgl {
             int tile_end_x_culled = tile_end_x;
 
             if constexpr (EMPTY_TILE_CULLING) {
-                const auto max3 = [&](int a, int b, int c) { return a > b ? (a > c ? a : c) : (b > c ? b : c); };
+
+                const auto max4 = [&](int a, int b, int c, int d) { 
+                    int array[] = { b, c, d };
+                    int max = a;
+
+                    for (int i = 0; i < 3; ++i)
+                        if (array[i] > max)
+                            max = array[i];
+
+                    return max;              
+                };
+
                 const auto e0 = [&](int x, int y) { return scalar_start_edge[0] + scalar_dx_edge[0] * x + scalar_dy_edge[0] * y; };
                 const auto e1 = [&](int x, int y) { return scalar_start_edge[1] + scalar_dx_edge[1] * x + scalar_dy_edge[1] * y; };
                 const auto e2 = [&](int x, int y) { return scalar_start_edge[2] + scalar_dx_edge[2] * x + scalar_dy_edge[2] * y; };
 
                 const auto is_tile_outside = [&](int tx, int ty) {
                     return
-                        max3({ e0(tx * TILE_SIZE, ty * TILE_SIZE),
+                        max4(e0(tx * TILE_SIZE, ty * TILE_SIZE),
                         e0(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE),
                         e0(tx * TILE_SIZE, ty * TILE_SIZE + TILE_SIZE - 1),
-                        e0(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1) }) < 0
+                        e0(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1)) < 0
                         ||
-                        max3({ e1(tx * TILE_SIZE, ty * TILE_SIZE),
+                        max4(e1(tx * TILE_SIZE, ty * TILE_SIZE),
                         e1(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE),
                         e1(tx * TILE_SIZE, ty * TILE_SIZE + TILE_SIZE - 1),
-                        e1(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1) }) < 0
+                        e1(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1)) < 0
                         ||
-                        max3({ e2(tx * TILE_SIZE, ty * TILE_SIZE),
+                        max4(e2(tx * TILE_SIZE, ty * TILE_SIZE),
                         e2(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE),
                         e2(tx * TILE_SIZE, ty * TILE_SIZE + TILE_SIZE - 1),
-                        e2(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1) }) < 0;
+                        e2(tx * TILE_SIZE + TILE_SIZE - 1, ty * TILE_SIZE + TILE_SIZE - 1)) < 0;
                     };
 
                 for (int tx = tile_start_x; tx < tile_end_x; ++tx) {
@@ -862,7 +868,15 @@ namespace bgl {
             for (int i = 0; i < 3; ++i)
                 edges[i] = TWarp::add(TWarp::mul(TWarp::scalar(sy), dy_edge[i]), TWarp::add(TWarp::mul(TWarp::scalar(sx), dx_edge[i]), start_edge[i]));
 
-            for (int tx = tile_start_x_culled; tx < tile_end_x_culled; ++tx) {
+           for (int tx = tile_start_x_culled; tx < tile_end_x_culled; ++tx) {
+                int sx = tx * TILE_SIZE;
+                int sy = ty * TILE_SIZE;
+                
+                for (int i = 0; i < NUM_ATTRS; ++i)
+                    attrs[i] = TWarp::fma(TWarp::scalar(sy * 1.f), a_dy[i], TWarp::fma(TWarp::scalar(sx * 1.f), a_dx[i], a_start[i]));
+
+                for (int i = 0; i < 3; ++i)
+                    edges[i] = TWarp::add(TWarp::mul(TWarp::scalar(sy), dy_edge[i]), TWarp::add(TWarp::mul(TWarp::scalar(sx), dx_edge[i]), start_edge[i]));
 
                 tile_lock(tx, ty);
 
@@ -879,26 +893,20 @@ namespace bgl {
 
                         for (int i = 0; i < NUM_ATTRS; ++i)
                             attrs[i] = TWarp::add(attrs[i], a_dx_wide[i]);
-
+                            
                         for (int i = 0; i < 3; ++i)
                             edges[i] = TWarp::add(edges[i], dx_wide_edge[i]);
                     }
 
                     for (int i = 0; i < NUM_ATTRS; ++i)
-                        attrs[i] = TWarp::add(attrs[i], TWarp::fma(a_dx_wide[i], TWarp::scalar(-1.f * column_step), a_dy[i]));
-
+                        attrs[i] = TWarp::add(attrs[i], TWarp::fma(a_dx_wide[i], TWarp::scalar(-1.f * column_step), a_dy[i]));    
+                        
                     for (int i = 0; i < 3; ++i)
                         edges[i] = TWarp::add(edges[i], TWarp::add(dy_edge[i], TWarp::mul(dx_wide_edge[i], TWarp::scalar(-column_step))));
                 }
 
-                for (int i = 0; i < NUM_ATTRS; ++i)
-                    attrs[i] = TWarp::add(attrs[i], TWarp::mul(TWarp::fma(TWarp::scalar(-1.f), a_dy[i], a_dx[i]), TWarp::scalar(1.f * TILE_SIZE)));
-
-                for (int i = 0; i < 3; ++i)
-                    edges[i] = TWarp::add(edges[i], TWarp::mul(TWarp::add(dx_edge[i], TWarp::mul(dy_edge[i], TWarp::scalar(-1))), TWarp::scalar(TILE_SIZE)));
-
                 tile_unlock(tx, ty);
-            }
+            }            
         }
     }
 }
